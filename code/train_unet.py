@@ -108,5 +108,5 @@ for epoch in range(N_EPOCHS):
         if epoch > 9:
             torch.save(
                 weights_dict,
-                CHECKPOINTS_DIR / f"u_net_{epoch}.pth",
+                CHECKPOINTS_DIR / f"u_net.pth",
             )
