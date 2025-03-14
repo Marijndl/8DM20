@@ -53,7 +53,7 @@ class Encoder(nn.Module):
         hold the number of input channels for each encoder block
     """
 
-    def __init__(self, spatial_size=[64, 64], z_dim=256, chs=(1, 64, 128, 256)):
+    def __init__(self, z_dim=256, chs=(1, 64, 128, 256), spatial_size=[64, 64]):
         super().__init__()
         # convolutional blocks
         self.enc_blocks = nn.ModuleList(
@@ -126,7 +126,7 @@ class Generator(nn.Module):
             # TODO: conv block           
         )
         self.head = nn.Sequential(
-            nn.Conv2d(self.chs[-1], 1, kernel_size=3, padding=1),
+            nn.Conv2d(self.chs[-1], 1, 1),
             nn.Tanh(),
         )  # output layer
 
@@ -163,12 +163,14 @@ class VAE(nn.Module):
     """
     def __init__(
         self,
+        z_dim=256,
         enc_chs=(1, 64, 128, 256),
         dec_chs=(256, 128, 64, 32),
     ):
         super().__init__()
-        self.encoder = Encoder()
-        self.generator = Generator()
+        self.encoder = Encoder(z_dim, enc_chs)
+        self.generator = Generator(z_dim, dec_chs)
+
 
 
     def forward(self, x):
