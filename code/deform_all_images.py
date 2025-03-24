@@ -29,7 +29,7 @@ import matplotlib.pyplot as plt
 img_size = 64
 transform = transforms.Compose([
     transforms.CenterCrop(256),
-    transforms.Resize(img_size)
+    transforms.Resize(img_size, antialias=True)
 ])
 
 def plot_slices(mask_tensor, synthetic_tensor, num_slices=5, alpha=0.4):
