@@ -75,7 +75,7 @@ def plot_slices(mask_tensor, synthetic_tensor, num_slices=5, alpha=0.4):
 
         # Overlay only the mask regions
         axes[i, 2].imshow(synthetic_slice, cmap="gray")  # Base grayscale image
-        axes[i, 2].imshow(mask_binary, cmap="jet", alpha=alpha)  # Apply colormap only to mask regions
+        axes[i, 2].imshow(mask_binary, cmap="Oranges", alpha=alpha)  # Apply colormap only to mask regions
         axes[i, 2].set_title(f"Overlay Slice {idx.item()}")
         axes[i, 2].axis("off")
 
@@ -83,7 +83,7 @@ def plot_slices(mask_tensor, synthetic_tensor, num_slices=5, alpha=0.4):
     plt.show()
 
 
-def process_directory(directory_path, alpha, vae_model):
+def process_directory(directory_path, alpha, vae_model, plot_examples=True):
     """Find all prostaat.mhd files in the directory, apply elastic transformation, create synthetic image, save, and plot."""
 
     for root, _, files in os.walk(directory_path):
@@ -118,7 +118,8 @@ def process_directory(directory_path, alpha, vae_model):
                 print(f"Synthetic image saved to: {output_synthetic_path}")
 
                 # Plot 5 sample slices
-                plot_slices(deformed_mask, synthetic_image_np)
+                if plot_examples:
+                    plot_slices(deformed_mask, synthetic_image_np)
 
 
 def create_vae_model(checkpoint_path):
@@ -135,5 +136,5 @@ if __name__ == "__main__":
     vae_model = create_vae_model(checkpoint_path)
 
     # Process the directory and generate synthetic images
-    directory_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData\p102"  # Replace with actual path
-    process_directory(directory_path, alpha=1400, vae_model=vae_model)
+    directory_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData"  # Replace with actual path
+    process_directory(directory_path, alpha=1400, vae_model=vae_model, plot_examples=True)
