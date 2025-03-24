@@ -19,9 +19,10 @@ elif torch.backends.mps.is_available():
     device = torch.device("mps")
 else:
     device = torch.device("cpu")
+print(f"Using device: {device}")
 
 # directorys with data and to store training checkpoints and logs
-DATA_DIR = Path.cwd() / "TrainingData"
+DATA_DIR = Path("D:\capita_selecta\DevelopmentData\DevelopmentData")
 CHECKPOINTS_DIR = Path.cwd() / "segmentation_model_weights"
 CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
 TENSORBOARD_LOGDIR = "segmentation_runs"
@@ -115,5 +116,4 @@ for epoch in range(N_EPOCHS):
         if epoch > 9:
             torch.save(
                 weights_dict,
-                CHECKPOINTS_DIR / f"u_net.pth",
             )
