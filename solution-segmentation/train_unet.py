@@ -116,4 +116,5 @@ for epoch in range(N_EPOCHS):
         if epoch > 9:
             torch.save(
                 weights_dict,
+                CHECKPOINTS_DIR / f"u_net-val_loss={minimum_valid_loss:04}.pth",
             )
