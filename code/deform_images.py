@@ -57,6 +57,20 @@ def save_mhd_image(original_image, array, output_path):
     new_image.CopyInformation(original_image)  # Preserve metadata
     sitk.WriteImage(new_image, output_path)
 
+def save_mhd_image_without_metadata(array, output_path, spacing=(1.0, 1.0, 1.0), origin=(0, 0, 0), direction=(1, 0, 0, 0, 1, 0, 0, 0, 1)):
+    """
+    Save a 3D numpy array as an .mhd and .zraw file without copying metadata.
+    """
+    new_image = sitk.GetImageFromArray(array)
+
+    # Assign basic metadata (default values can be modified if needed)
+    new_image.SetSpacing(spacing)
+    new_image.SetOrigin(origin)
+    new_image.SetDirection(direction)
+
+    sitk.WriteImage(new_image, output_path)
+    print(f"Image saved without metadata at: {output_path}")
+
 
 def plot_examples(original, deformed, num_examples=3):
     """Plot original, deformed, and difference slices, ensuring foreground pixels are present."""

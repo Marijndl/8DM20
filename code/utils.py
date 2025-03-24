@@ -18,7 +18,7 @@ class ProstateMRDataset(torch.utils.data.Dataset):
         size of images to be interpolated to
     """
 
-    def __init__(self, paths, img_size, valid=False):
+    def __init__(self, paths, img_size, valid=False, synthetic=False):
         self.mr_image_list = []
         self.mask_list = []
         # load images
@@ -33,6 +33,18 @@ class ProstateMRDataset(torch.utils.data.Dataset):
                     np.int32
                 )
             )
+            # Generated images:
+            if synthetic:
+                self.mr_image_list.append(
+                    sitk.GetArrayFromImage(sitk.ReadImage(path / "mr_bffe_synthetic.mhd")).astype(
+                        np.int32
+                    )
+                )
+                self.mask_list.append(
+                    sitk.GetArrayFromImage(sitk.ReadImage(path / "prostaat_deformed.mhd")).astype(
+                        np.int32
+                    )
+                )
 
         # number of patients and slices in the dataset
         self.no_patients = len(self.mr_image_list)

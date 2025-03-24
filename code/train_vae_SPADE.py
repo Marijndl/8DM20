@@ -66,7 +66,7 @@ partition = {
 }
 
 # load training data and create DataLoader with batching and shuffling
-dataset = utils.ProstateMRDataset(partition["train"], IMAGE_SIZE, valid=True)
+dataset = utils.ProstateMRDataset(partition["train"], IMAGE_SIZE, valid=False, synthetic=False)
 dataloader = DataLoader(
     dataset,
     batch_size=BATCH_SIZE,
@@ -76,7 +76,7 @@ dataloader = DataLoader(
 )
 
 # load validation data
-valid_dataset = utils.ProstateMRDataset(partition["validation"], IMAGE_SIZE, valid=True)
+valid_dataset = utils.ProstateMRDataset(partition["validation"], IMAGE_SIZE, valid=True, synthetic=False)
 valid_dataloader = DataLoader(
     valid_dataset,
     batch_size=BATCH_SIZE,
