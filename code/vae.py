@@ -18,10 +18,10 @@ class Block(nn.Module):
     def __init__(self, in_ch, out_ch):
         super().__init__()
         self.conv1 = nn.Conv2d(in_ch, out_ch, 3, padding=1)
-        self.bn1 = # TODO   # batch normalisation
+        self.bn1 = nn.BatchNorm2d(out_ch)
         self.conv2 = nn.Conv2d(out_ch, out_ch, 3, padding=1)
-        self.bn2 = # TODO 
-        self.lrelu =  # TODO  # leaky ReLU
+        self.bn2 = nn.BatchNorm2d(out_ch)
+        self.lrelu = nn.LeakyReLU()
 
 
     def forward(self, x):
@@ -36,7 +36,12 @@ class Block(nn.Module):
         # with ReLU activations
         # use batch normalisation
 
-        # TODO
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.lrelu(x)
+        x = self.conv2(x)
+        x = self.bn2(x)
+        x = self.lrelu(x)
         return x
 
 
@@ -57,15 +62,15 @@ class Encoder(nn.Module):
         super().__init__()
         # convolutional blocks
         self.enc_blocks = nn.ModuleList(
-            # TODO
+            [Block(chs[i], chs[i + 1]) for i in range(len(chs) - 1)]
         )
         # max pooling
-        self.pool = # TODO
+        self.pool = nn.MaxPool2d(2)
         # height and width of images at lowest resolution level
-        _h, _w = # TODO
+        _h, _w = int(spatial_size[0] / (2 ** len(self.enc_blocks))), int(spatial_size[1] / (2 ** len(self.enc_blocks)))
 
         # flattening
-        self.out = nn.Sequential(nn.Flatten(1), nn.Linear(chs[-1] * _h * _w, 2 * z_dim))
+        self.out = nn.Sequential(nn.Flatten(1), nn.Linear(chs[-1] * _h * _w, 2 * z_dim)) #2 because of mean and std for z
 
     def forward(self, x):
         """Performs the forward pass for all blocks in the encoder.
@@ -83,9 +88,9 @@ class Encoder(nn.Module):
         """
 
         for block in self.enc_blocks:
-            # TODO: conv block           
-            # TODO: pooling 
-        # TODO: output layer          
+            x = block(x)
+            x = self.pool(x)
+        x = self.out(x)
         return torch.chunk(x, 2, dim=1)  # 2 chunks, 1 each for mu and logvar
 
 
@@ -119,11 +124,11 @@ class Generator(nn.Module):
         )  # reshaping
 
         self.upconvs = nn.ModuleList(
-            # TODO: transposed convolution            
+            [nn.ConvTranspose2d(chs[i], chs[i], 2, 2) for i in range(len(chs) - 1)]
         )
 
         self.dec_blocks = nn.ModuleList(
-            # TODO: conv block           
+            [Block(chs[i], chs[i + 1]) for i in range(len(chs) - 1)]
         )
         self.head = nn.Sequential(
             nn.Conv2d(self.chs[-1], 1, 1),
@@ -143,11 +148,11 @@ class Generator(nn.Module):
         x : torch.Tensor
         
         """
-        x = # TODO: fully connected layer
-        x = # TODO: reshape to image dimensions
+        x = self.proj_z(z)
+        x = self.reshape(x)
         for i in range(len(self.chs) - 1):
-            # TODO: transposed convolution
-            # TODO: convolutional block
+            x = self.upconvs[i](x)
+            x = self.dec_blocks[i](x)
         return self.head(x)
 
 
@@ -237,9 +242,9 @@ def kld_loss(mu, logvar):
 
     Parameters
     ----------
-    mu : float
+    mu : torch.Tensor
         the mean of the distribution
-    logvar : float
+    logvar : torch.Tensor
         the log of the variance of the distribution
 
     Returns

@@ -1,0 +1,6 @@
+/.idea
+*.pyc
+*.pth
+/code/vae_runs
+/code/vae_runs_SPADE
+/solution-segmentation/segmentation_runs
