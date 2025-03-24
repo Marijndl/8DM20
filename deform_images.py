@@ -295,23 +295,23 @@ def plot_deformation_field_slices(dx, dy, dz, mask_array, num_slices=3):
     plt.tight_layout()
     plt.show()
 
+if __name__ == "__main__":
+    # Example Usage
+    file_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData\p102\prostaat.mhd"  # Replace with actual path
+    output_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData\p102\prostaat_deformed.mhd"
 
-# Example Usage
-file_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData\p102\prostaat.mhd"  # Replace with actual path
-output_path = r"D:\capita_selecta\DevelopmentData\DevelopmentData\p102\prostaat_deformed.mhd"
+    # Load, apply deformation, and save
+    original_image, mask_array = load_mhd_image(file_path)
+    deformed_mask, dx, dy, dz = elastic_transform_3d(mask_array)  # Now returns displacement fields
 
-# Load, apply deformation, and save
-original_image, mask_array = load_mhd_image(file_path)
-deformed_mask, dx, dy, dz = elastic_transform_3d(mask_array)  # Now returns displacement fields
+    # Save the deformed volume (uncomment to enable saving)
+    # save_mhd_image(original_image, deformed_mask, output_path)
 
-# Save the deformed volume (uncomment to enable saving)
-# save_mhd_image(original_image, deformed_mask, output_path)
+    # Plot some examples of original vs deformed slices
+    plot_examples(mask_array, deformed_mask, num_examples=3)
 
-# Plot some examples of original vs deformed slices
-plot_examples(mask_array, deformed_mask, num_examples=3)
+    # Plot the 3D deformation field
+    plot_deformation_field_3d(dx, dy, dz, mask_array, spacing=15)
 
-# Plot the 3D deformation field
-plot_deformation_field_3d(dx, dy, dz, mask_array, spacing=15)
-
-# Plot 2D slices of the deformation field
-plot_deformation_field_slices(dx, dy, dz, mask_array, num_slices=3)
+    # Plot 2D slices of the deformation field
+    plot_deformation_field_slices(dx, dy, dz, mask_array, num_slices=3)
