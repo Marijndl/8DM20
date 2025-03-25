@@ -202,6 +202,7 @@ for epoch in range(N_EPOCHS):
             torch.save(
                 weights_dict,
                 CHECKPOINTS_DIR / f"vae_model_SPADE_6.pth",
+            )
 
 weights_dict = {k: v.cpu() for k, v in vae_model.state_dict().items()}
 torch.save(
