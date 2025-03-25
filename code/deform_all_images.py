@@ -32,7 +32,7 @@ transform = transforms.Compose([
     transforms.Resize(img_size, antialias=True)
 ])
 
-def plot_slices(mask_tensor, synthetic_tensor, num_slices=5, alpha=0.4):
+def plot_slices(mask_tensor, synthetic_tensor, title, num_slices=5, alpha=0.4):
     """
     Plot `num_slices` pairs of input masks and generated synthetic images,
     including an overlay visualization.
@@ -79,6 +79,7 @@ def plot_slices(mask_tensor, synthetic_tensor, num_slices=5, alpha=0.4):
         axes[i, 2].set_title(f"Overlay Slice {idx.item()}")
         axes[i, 2].axis("off")
 
+    fig.suptitle(title)
     plt.tight_layout()
     plt.show()
 
@@ -101,6 +102,7 @@ def process_directory(directory_path, alpha, vae_model, plot_examples=True):
                 with torch.no_grad():
                     mask_tensor = torch.tensor(deformed_mask, dtype=torch.float32).unsqueeze(1).to(
                         device)  # Add channel dim
+                    mask_tensor += 1
                     noise = vae.get_noise(mask_tensor.shape[0], z_dim=Z_DIM,
                                           device=device)  # Generate noise for all slices
                     synthetic_image = vae_model.generator(noise, mask_tensor)
@@ -119,7 +121,7 @@ def process_directory(directory_path, alpha, vae_model, plot_examples=True):
 
                 # Plot 5 sample slices
                 if plot_examples:
-                    plot_slices(deformed_mask, synthetic_image_np)
+                    plot_slices(deformed_mask, synthetic_image_np, root[-4:])
 
 
 def create_vae_model(checkpoint_path):
@@ -132,7 +134,8 @@ def create_vae_model(checkpoint_path):
 
 if __name__ == "__main__":
     # Load the VAE model
-    checkpoint_path = r"C:\Users\20203226\Documents\GitHub\8DM20\code\vae_model_weights_SPADE\vae_model_SPADE.pth"  # Replace with actual path
+    # checkpoint_path = r"C:\Users\20203226\Documents\GitHub\8DM20\code\vae_model_weights_SPADE\vae_model_SPADE.pth"  # Replace with actual path
+    checkpoint_path = r"C:\Users\20203226\Documents\GitHub\8DM20\code\vae_model_weights_SPADE\vae_model_SPADE_6_final.pth"  # Replace with actual path
     vae_model = create_vae_model(checkpoint_path)
 
     # Process the directory and generate synthetic images

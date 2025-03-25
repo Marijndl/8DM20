@@ -5,6 +5,7 @@ import numpy as np
 import torch
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
@@ -37,18 +38,19 @@ N_EPOCHS = 100
 DECAY_LR_AFTER = 50
 LEARNING_RATE = 1e-4
 DISPLAY_FREQ = 10
+TOLERANCE = 0.03  # for early stopping
 
 # dimension of VAE latent space
 Z_DIM = 256
 
-# function to reduce the
-def lr_lambda(the_epoch):
-    """Function for scheduling learning rate"""
-    return (
-        1.0
-        if the_epoch < DECAY_LR_AFTER
-        else 1 - float(the_epoch - DECAY_LR_AFTER) / (N_EPOCHS - DECAY_LR_AFTER)
-    )
+# # function to reduce the
+# def lr_lambda(the_epoch):
+#     """Function for scheduling learning rate"""
+#     return (
+#         1.0
+#         if the_epoch < DECAY_LR_AFTER
+#         else 1 - float(the_epoch - DECAY_LR_AFTER) / (N_EPOCHS - DECAY_LR_AFTER)
+#     )
 
 # find patient folders in training directory
 # excluding hidden folders (start with .)
@@ -66,7 +68,7 @@ partition = {
 }
 
 # load training data and create DataLoader with batching and shuffling
-dataset = utils.ProstateMRDataset(partition["train"], IMAGE_SIZE, valid=False, synthetic=False)
+dataset = utils.ProstateMRDataset(partition["train"], IMAGE_SIZE, valid=True, synthetic=False)
 dataloader = DataLoader(
     dataset,
     batch_size=BATCH_SIZE,
@@ -88,9 +90,23 @@ valid_dataloader = DataLoader(
 # initialise model, optimiser
 vae_model = vae.VAE(z_dim=Z_DIM).to(device)
 optimizer = torch.optim.Adam(vae_model.parameters(), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.LambdaLR(optimizer, lr_lambda)
+
+# Compute total number of training steps
+total_steps = N_EPOCHS * len(dataloader)  # total training steps
+warmup_steps = 10 * len(dataloader)  # warmup lasts for 10 epochs worth of steps
+
+# Define warmup function based on batch step
+def lr_lambda(current_step):
+    if current_step < warmup_steps:
+        return (current_step + 1) / warmup_steps  # Linear warmup
+    else:
+        return 1  # After warmup, let CosineAnnealing take over
+
+warmup_scheduler = LambdaLR(optimizer, lr_lambda)
+cosine_scheduler = CosineAnnealingLR(optimizer, T_max=total_steps - 4 * warmup_steps, eta_min=1e-6)
 
 # training loop
+minimum_valid_loss = 10  # initial validation loss
 writer = SummaryWriter(log_dir=TENSORBOARD_LOGDIR)  # tensorboard summary
 for epoch in range(N_EPOCHS):
     current_train_loss = 0.0
@@ -103,6 +119,10 @@ for epoch in range(N_EPOCHS):
     for x_real, y_real in train_loader:
     # Converteer naar float
         x_real, y_real = x_real.to(device).float(), y_real.to(device).float()
+
+        # Adjust the label so black also contains information
+        y_real = y_real + 1
+
         optimizer.zero_grad()
         x_recon, mu, logvar = vae_model(x_real, y_real)
 
@@ -112,9 +132,16 @@ for epoch in range(N_EPOCHS):
 
         current_train_loss += loss.item()
 
+        # Step the scheduler
+        if epoch < 10:
+            warmup_scheduler.step()
+        elif epoch < 40:
+            pass
+        else:
+            cosine_scheduler.step()
+
 
     writer.add_scalar("Loss/train", current_train_loss / len(dataloader), epoch)
-    scheduler.step() # step the learning step scheduler
 
     # evaluate validation loss
     with torch.no_grad():
@@ -124,8 +151,10 @@ for epoch in range(N_EPOCHS):
 
         for x_real, y_real in valid_loader:
             x_real, y_real = x_real.to(device).float(), y_real.to(device).float()
-            # Normaliseer x_real naar [-1, 1] (aangezien je generator Tanh gebruikt)
-            x_real = x_real * 2 - 1
+
+            # Adjust the label so black also contains information
+            y_real = y_real + 1
+
             x_recon, mu, logvar = vae_model(x_real, y_real)
             # Gebruik een lagere beta om posterior collapse te voorkomen
             loss = vae.vae_loss(x_real, x_recon, mu, logvar, beta=0.1)
@@ -150,7 +179,7 @@ for epoch in range(N_EPOCHS):
 
             # Gebruik y_real in plaats van random_segmap
             noise = vae.get_noise(10, z_dim=Z_DIM, device=device)
-            image_samples = vae_model.generator(noise, y_real[:10])  # Gebruik de echte maskers
+            image_samples = vae_model.generator(noise, y_real[:10])  # Use some random masks
             img_grid = make_grid(
                 torch.cat((image_samples[:5].cpu(), image_samples[5:].cpu())),
                 nrow=5,
@@ -164,8 +193,18 @@ for epoch in range(N_EPOCHS):
             )
         vae_model.train()
 
+    # if validation loss is improving, save model checkpoint
+    # only start saving after 5 epochs
+    if (current_valid_loss / len(valid_dataloader)) < minimum_valid_loss + TOLERANCE:
+        minimum_valid_loss = current_valid_loss / len(valid_dataloader)
+        weights_dict = {k: v.cpu() for k, v in vae_model.state_dict().items()}
+        if epoch > 5:
+            torch.save(
+                weights_dict,
+                CHECKPOINTS_DIR / f"vae_model_SPADE_6.pth",
+
 weights_dict = {k: v.cpu() for k, v in vae_model.state_dict().items()}
 torch.save(
     weights_dict,
-    CHECKPOINTS_DIR / "vae_model_SPADE.pth",
+    CHECKPOINTS_DIR / "vae_model_SPADE_6_final.pth",
 )
