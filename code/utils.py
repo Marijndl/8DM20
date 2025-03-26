@@ -109,7 +109,10 @@ class ProstateMRDataset(torch.utils.data.Dataset):
 
         if use_synthetic:
             # Get synthetic slice
-            adjusted_index = index % (self.no_patients * self.no_slices)
+            if index > (self.no_patients * self.no_slices)
+                adjusted_index = index - self.no_patients * self.no_slices
+            else:
+                adjusted_index = index
             patient = adjusted_index // self.no_slices
             the_slice = adjusted_index % self.no_slices
             img_list = self.mr_image_list_synthetic
