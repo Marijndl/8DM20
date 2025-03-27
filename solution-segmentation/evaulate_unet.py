@@ -34,9 +34,11 @@ NO_VALIDATION_PATIENTS = 2
 NO_TEST_PATIENTS = 2
 IMAGE_SIZE = [64, 64]
 BATCH_SIZE = 32
-N_EPOCHS = 100
+N_EPOCHS = 15
 LEARNING_RATE = 1e-4
 TOLERANCE = 0.01  # for early stopping
+
+unet_model = u_net.UNet(num_classes=1).to(device)
 
 # find patient folders in training directory
 # excluding hidden folders (start with .)
@@ -53,86 +55,6 @@ partition = {
     "validation": patients[-NO_VALIDATION_PATIENTS-NO_TEST_PATIENTS:-NO_TEST_PATIENTS],
     "test": patients[-NO_TEST_PATIENTS:],
 }
-
-# load training data and create DataLoader with batching and shuffling
-dataset = utils.ProstateMRDataset(partition["train"], IMAGE_SIZE, synthetic=True)
-dataloader = DataLoader(
-    dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    drop_last=True,
-    pin_memory=True,
-)
-
-# load validation data
-valid_dataset = utils.ProstateMRDataset(partition["validation"], IMAGE_SIZE, valid=True, synthetic=True)
-valid_dataloader = DataLoader(
-    valid_dataset,
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-    drop_last=True,
-    pin_memory=True,
-)
-
-# initialise model, optimiser, and loss function
-loss_function = utils.DiceBCELoss()
-unet_model = u_net.UNet(num_classes=1).to(device)
-optimizer = torch.optim.Adam(unet_model.parameters(), lr=LEARNING_RATE)
-
-minimum_valid_loss = 10  # initial validation loss
-writer = SummaryWriter(log_dir=TENSORBOARD_LOGDIR)  # tensorboard summary
-
-# training loop
-for epoch in range(N_EPOCHS):
-    current_train_loss = 0.0
-    current_valid_loss = 0.0
-
-    # Training iterations with tqdm showing epoch number
-    train_loader = tqdm(dataloader, position=0, leave=True)
-    train_loader.set_description(f"Epoch {epoch+1}/{N_EPOCHS} [Training]")
-
-    for inputs, labels in train_loader:
-        # needed to zero gradients in each iterations
-        optimizer.zero_grad()
-        outputs = unet_model(inputs.to(device))  # forward pass
-        loss = loss_function(outputs, labels.to(device).float())
-        loss.backward()  # backpropagate loss
-        current_train_loss += loss.item()
-        optimizer.step()  # update weights
-
-    # evaluate validation loss
-    with torch.no_grad():
-        unet_model.eval()
-
-        valid_loader = tqdm(valid_dataloader, position=0, leave=True)
-        valid_loader.set_description(f"Epoch {epoch+1}/{N_EPOCHS} [Validation]")
-
-        for inputs, labels in valid_loader:
-            outputs = unet_model(inputs.to(device))  # forward pass
-            loss = loss_function(outputs, labels.to(device).float())
-            current_valid_loss += loss.item()
-
-        unet_model.train()
-
-    # write to tensorboard log
-    writer.add_scalar("Loss/train", current_train_loss / len(dataloader), epoch)
-    writer.add_scalar(
-        "Loss/validation", current_valid_loss / len(valid_dataloader), epoch
-    )
-
-    # if validation loss is improving, save model checkpoint
-    # only start saving after 10 epochs
-    if (current_valid_loss / len(valid_dataloader)) < minimum_valid_loss + TOLERANCE:
-        minimum_valid_loss = current_valid_loss / len(valid_dataloader)
-        weights_dict = {k: v.cpu() for k, v in unet_model.state_dict().items()}
-        if epoch > 5:
-            torch.save(
-                weights_dict,
-                CHECKPOINTS_DIR / f"u_net-val_loss={minimum_valid_loss:04}.pth",
-            )
-
-########################################################################
-# Test set evaluation
 
 # Load the best model for evaluation
 best_model_path = max(CHECKPOINTS_DIR.glob("u_net-val_loss=*.pth"), key=lambda x: float(x.stem.split('=')[-1]))
