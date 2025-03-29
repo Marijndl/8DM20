@@ -159,11 +159,12 @@ with torch.no_grad():
         predicted_masks = prediction.cpu().numpy().astype(int)
         ground_truth_masks = labels.cpu().numpy().astype(int)
 
-        # Compute DICE score
-        intersection = np.sum(predicted_masks * ground_truth_masks)
-        union = np.sum(predicted_masks) + np.sum(ground_truth_masks)
-        dice_score = (2. * intersection) / (union + 1e-6)  # Avoid division by zero
-        dice_scores.append(dice_score)
+        # Compute DICE score only if at least one of the masks contains nonzero pixels
+        if np.any(predicted_masks) or np.any(ground_truth_masks):
+            intersection = np.sum(predicted_masks * ground_truth_masks)
+            union = np.sum(predicted_masks) + np.sum(ground_truth_masks)
+            dice_score = (2. * intersection) / (union + 1e-6)  # Avoid division by zero
+            dice_scores.append(dice_score)
 
         # Compute Hausdorff distance only if both masks contain nonzero pixels
         if np.any(predicted_masks) and np.any(ground_truth_masks):
@@ -171,12 +172,16 @@ with torch.no_grad():
             hausdorff_distances.append(hausdorff_dist)
 
 # Convert lists to NumPy arrays
-dice_scores = np.array(dice_scores)
+dice_scores = np.array(dice_scores) if dice_scores else np.array([np.nan])  # Handle empty case
 hausdorff_distances = np.array(hausdorff_distances) if hausdorff_distances else np.array([np.nan])  # Handle empty case
 
 # Print final metrics
 print(f"Test Set Evaluation:")
-print(f" - Mean DICE Score: {dice_scores.mean():.4f} ± {dice_scores.std():.4f}")
+if not np.isnan(dice_scores).all():
+    print(f" - Mean DICE Score: {dice_scores.mean():.4f} ± {dice_scores.std():.4f}")
+else:
+    print(" - DICE Score: Not computed (all masks were empty)")
+
 if not np.isnan(hausdorff_distances).all():
     print(f" - Mean Hausdorff Distance: {hausdorff_distances.mean():.4f} ± {hausdorff_distances.std():.4f}")
 else:

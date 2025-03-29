@@ -7,6 +7,7 @@ import torch
 import torch.nn as nn
 import torchvision.transforms as transforms
 
+
 class ProstateMRDataset(torch.utils.data.Dataset):
     """Dataset containing prostate MR images.
 
@@ -103,32 +104,47 @@ class ProstateMRDataset(torch.utils.data.Dataset):
 
     def __getitem__(self, index):
         """Returns a randomly chosen real or synthetic MR image slice along with its corresponding mask."""
-
-        # Determine if we are using real or synthetic data
-        use_synthetic = self.synthetic and (random.random() < 0.5)  # 50% chance to use synthetic data
-
-        if use_synthetic:
-            # Get synthetic slice
-            if index > (self.no_patients * self.no_slices)
-                adjusted_index = index - self.no_patients * self.no_slices
+        # Bepaal of synthetische data wordt gebruikt en pas de index aan
+        if self.synthetic:
+            use_synthetic = random.random() < 0.5  # 50% kans op synthetische data
+            total_real_slices = self.no_patients * self.no_slices
+            if index >= total_real_slices:
+                use_synthetic = True  # Forceer synthetische data voor indices >= totaal echte slices
+                adjusted_index = index - total_real_slices
             else:
+                use_synthetic = False
                 adjusted_index = index
-            patient = adjusted_index // self.no_slices
-            the_slice = adjusted_index % self.no_slices
+        else:
+            use_synthetic = False
+            adjusted_index = index
+
+        # Bepaal patiënt en slice op basis van adjusted_index
+        patient = adjusted_index // self.no_slices
+        the_slice = adjusted_index % self.no_slices
+
+        # Kies de juiste lijst en transformatie
+        if use_synthetic:
             img_list = self.mr_image_list_synthetic
             mask_list = self.mask_list_synthetic
             transform = self.synthetic_transform
             norm_transform = self.norm_transform_synth
         else:
-            # Get real slice
-            patient = index // self.no_slices
-            the_slice = index % self.no_slices
             img_list = self.mr_image_list
             mask_list = self.mask_list
             transform = self.img_transform
             norm_transform = self.norm_transform
 
-        # Seed randomness to ensure consistency in image-mask transformation
+        # Debugging output
+        # print(f"Index: {index}, Patient: {patient}, Slice: {the_slice}, Use synthetic: {use_synthetic}, Total patients: {len(img_list)}")
+
+        # Controleer grenzen
+        if patient >= len(img_list):
+            raise IndexError(f"Patient index out of range: patient={patient}, img_list size={len(img_list)}")
+        if the_slice >= img_list[patient].shape[0]:
+            raise IndexError(
+                f"Slice index out of range: slice={the_slice}, slices available={img_list[patient].shape[0]}")
+
+        # Stel seed in voor consistente transformaties
         seed = np.random.randint(2147483647)
         random.seed(seed)
         torch.manual_seed(seed)
@@ -141,7 +157,8 @@ class ProstateMRDataset(torch.utils.data.Dataset):
         y = transform((mask_list[patient][the_slice, ...] > 0).astype(np.int32))
 
         return x, y
-    
+
+
 class DiceBCELoss(nn.Module):
     """Loss function, computed as the sum of Dice score and binary cross-entropy.
 
@@ -180,9 +197,8 @@ class DiceBCELoss(nn.Module):
         # compute Dice
         intersection = (outputs * targets).sum()
         dice_loss = 1 - (2.0 * intersection + smooth) / (
-            outputs.sum() + targets.sum() + smooth
+                outputs.sum() + targets.sum() + smooth
         )
         BCE = nn.functional.binary_cross_entropy(outputs, targets, reduction="mean")
 
         return BCE + dice_loss
-
