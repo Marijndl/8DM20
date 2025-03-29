@@ -9,8 +9,7 @@ from torch.optim.lr_scheduler import LambdaLR, CosineAnnealingLR
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-import utils
-import vae_SPADE as vae
+from models import utils, vae_SPADE as vae
 
 # to ensure reproducible training/validation split
 random.seed(41)

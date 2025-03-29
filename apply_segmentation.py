@@ -6,8 +6,7 @@ import torch
 from matplotlib import pyplot as plt
 from torch.utils.data import DataLoader
 
-import u_net
-import utils
+from models import u_net, utils
 
 # to ensure reproducible training/validation split
 random.seed(42)

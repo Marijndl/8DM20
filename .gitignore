@@ -1,6 +1,4 @@
 /.idea
 *.pyc
 *.pth
-/code/vae_runs
-/code/vae_runs_SPADE_1
-/code/segmentation_runs
+/runs/*

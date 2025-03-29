@@ -8,8 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 from skimage.metrics import hausdorff_distance
 
-import u_net
-import utils
+from models import u_net, utils
 
 # to ensure reproducible training/validation split
 random.seed(42)

@@ -8,8 +8,7 @@ from torch.utils.tensorboard import SummaryWriter
 from torchvision.utils import make_grid
 from tqdm import tqdm
 
-import utils
-import vae_SPADE as vae
+from models import utils, vae
 
 # to ensure reproducible training/validation split
 random.seed(41)
@@ -23,11 +22,11 @@ else:
     device = torch.device("cpu")
 print(f"Using device: {device}")
 
-# directories with data and to store training checkpoints and logs
+# directorys with data and to store training checkpoints and logs
 DATA_DIR = Path("D:\capita_selecta\DevelopmentData\DevelopmentData")
-CHECKPOINTS_DIR = Path.cwd() / "vae_model_weights_SPADE"
+CHECKPOINTS_DIR = Path.cwd() / "vae_model_weights"
 CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
-TENSORBOARD_LOGDIR = "vae_runs_SPADE"
+TENSORBOARD_LOGDIR = "vae_runs"
 
 # training settings and hyperparameters
 NO_VALIDATION_PATIENTS = 2
@@ -41,7 +40,6 @@ DISPLAY_FREQ = 10
 # dimension of VAE latent space
 Z_DIM = 256
 
-
 # function to reduce the
 def lr_lambda(the_epoch):
     """Function for scheduling learning rate"""
@@ -50,7 +48,6 @@ def lr_lambda(the_epoch):
         if the_epoch < DECAY_LR_AFTER
         else 1 - float(the_epoch - DECAY_LR_AFTER) / (N_EPOCHS - DECAY_LR_AFTER)
     )
-
 
 # find patient folders in training directory
 # excluding hidden folders (start with .)
@@ -97,17 +94,15 @@ writer = SummaryWriter(log_dir=TENSORBOARD_LOGDIR)  # tensorboard summary
 for epoch in range(N_EPOCHS):
     current_train_loss = 0.0
     current_valid_loss = 0.0
-
+    
     # Training iterations with tqdm showing epoch number
     train_loader = tqdm(dataloader, position=0, leave=True)
-    train_loader.set_description(f"Epoch {epoch + 1}/{N_EPOCHS} [Training]")
+    train_loader.set_description(f"Epoch {epoch+1}/{N_EPOCHS} [Training]")
 
     for x_real, y_real in train_loader:
-        # Converteer naar float
-        x_real, y_real = x_real.to(device).float(), y_real.to(device).float()
-
+        x_real = x_real.to(device)
         optimizer.zero_grad()
-        x_recon, mu, logvar = vae_model(x_real, y_real)
+        x_recon, mu, logvar = vae_model(x_real)
 
         loss = vae.vae_loss(x_real, x_recon, mu, logvar)
         loss.backward()
@@ -115,24 +110,22 @@ for epoch in range(N_EPOCHS):
 
         current_train_loss += loss.item()
 
+
     writer.add_scalar("Loss/train", current_train_loss / len(dataloader), epoch)
-    scheduler.step()  # step the learning step scheduler
+    scheduler.step() # step the learning step scheduler
 
     # evaluate validation loss
     with torch.no_grad():
         vae_model.eval()
         valid_loader = tqdm(valid_dataloader, position=0, leave=True)
-        valid_loader.set_description(f"Epoch {epoch + 1}/{N_EPOCHS} [Validation]")
+        valid_loader.set_description(f"Epoch {epoch+1}/{N_EPOCHS} [Validation]")
 
         for x_real, y_real in valid_loader:
-            x_real, y_real = x_real.to(device).float(), y_real.to(device).float()
-            # Normaliseer x_real naar [-1, 1] (aangezien je generator Tanh gebruikt)
-            x_real = x_real * 2 - 1
-            x_recon, mu, logvar = vae_model(x_real, y_real)
-            # Gebruik een lagere beta om posterior collapse te voorkomen
-            loss = vae.vae_loss(x_real, x_recon, mu, logvar, beta=0.1)
+            x_real = x_real.to(device)
+            x_recon, mu, logvar = vae_model(x_real)  # forward pass
+            loss = vae.vae_loss(x_real, x_recon, mu, logvar)
             current_valid_loss += loss.item()
-
+        
         # write to tensorboard log
         writer.add_scalar(
             "Loss/validation", current_valid_loss / len(valid_dataloader), epoch
@@ -149,10 +142,9 @@ for epoch in range(N_EPOCHS):
             writer.add_image(
                 "Real_fake", np.clip(img_grid[0][np.newaxis], -1, 1) / 2 + 0.5, epoch + 1
             )
-
-            # Gebruik y_real in plaats van random_segmap
+        
             noise = vae.get_noise(10, z_dim=Z_DIM, device=device)
-            image_samples = vae_model.generator(noise, y_real[:10])  # Use some random masks
+            image_samples = vae_model.generator(noise)
             img_grid = make_grid(
                 torch.cat((image_samples[:5].cpu(), image_samples[5:].cpu())),
                 nrow=5,
@@ -169,5 +161,5 @@ for epoch in range(N_EPOCHS):
 weights_dict = {k: v.cpu() for k, v in vae_model.state_dict().items()}
 torch.save(
     weights_dict,
-    CHECKPOINTS_DIR / "vae_model_SPADE.pth",
+    CHECKPOINTS_DIR / "vae_model2.pth",
 )

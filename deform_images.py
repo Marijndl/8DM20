@@ -2,8 +2,6 @@ import SimpleITK as sitk
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.ndimage import map_coordinates, gaussian_filter, zoom
-from mpl_toolkits.mplot3d import Axes3D
-
 
 def load_mhd_image(file_path):
     """Load a 3D binary mask from an .mhd and .zraw file."""

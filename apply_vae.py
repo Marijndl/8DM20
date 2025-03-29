@@ -3,7 +3,7 @@ from pathlib import Path
 import torch
 from matplotlib import pyplot as plt
 
-import vae
+from models import vae
 
 CHECKPOINTS_DIR = Path.cwd() / "vae_model_weights" / f"vae_model.pth"
 
