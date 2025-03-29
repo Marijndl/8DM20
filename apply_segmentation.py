@@ -12,8 +12,8 @@ from models import u_net, utils
 random.seed(42)
 
 # directorys with data and to stored training checkpoints
-DATA_DIR = Path.cwd() / "TrainingData"
-CHECKPOINTS_DIR = Path.cwd() / "segmentation_model_weights" / f"u_net.pth"
+DATA_DIR = Path("D:\capita_selecta\DevelopmentData\DevelopmentData")
+CHECKPOINTS_DIR = "runs/segmentation_model_weights/u_net.pth"
 
 # hyperparameters
 NO_VALIDATION_PATIENTS = 2

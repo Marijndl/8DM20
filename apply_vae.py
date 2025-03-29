@@ -5,7 +5,7 @@ from matplotlib import pyplot as plt
 
 from models import vae
 
-CHECKPOINTS_DIR = Path.cwd() / "vae_model_weights" / f"vae_model.pth"
+CHECKPOINTS_DIR = "runs/vae_model_weights/vae_model.pth"
 
 # hyperparameters
 IMAGE_SIZE = [64, 64]

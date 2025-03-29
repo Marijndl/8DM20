@@ -25,9 +25,9 @@ print(f"Using device: {device}")
 
 # directories with data and to store training checkpoints and logs
 DATA_DIR = Path("D:\capita_selecta\DevelopmentData\DevelopmentData")
-CHECKPOINTS_DIR = Path.cwd() / "vae_model_weights_SPADE"
+CHECKPOINTS_DIR = Path.cwd()  / "runs" / "vae_model_weights_SPADE"
 CHECKPOINTS_DIR.mkdir(parents=True, exist_ok=True)
-TENSORBOARD_LOGDIR = "vae_runs_SPADE"
+TENSORBOARD_LOGDIR = "runs/vae_runs_SPADE"
 
 # training settings and hyperparameters
 NO_VALIDATION_PATIENTS = 2
