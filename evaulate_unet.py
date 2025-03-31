@@ -94,6 +94,9 @@ with torch.no_grad():
 dice_scores = np.array(dice_scores) if dice_scores else np.array([np.nan])  # Handle empty case
 hausdorff_distances = np.array(hausdorff_distances) if hausdorff_distances else np.array([np.nan])  # Handle empty case
 
+print(repr(dice_scores.tolist()))
+print(repr(hausdorff_distances.tolist()))
+
 # Print final metrics
 print(f"Test Set Evaluation:")
 if not np.isnan(dice_scores).all():
