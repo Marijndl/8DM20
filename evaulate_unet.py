@@ -64,6 +64,8 @@ test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False, pin_memo
 
 dice_scores = []
 hausdorff_distances = []
+prediction_3d = []
+ground_truth_3d = []
 
 # Test set evaluation
 with torch.no_grad():
@@ -89,6 +91,21 @@ with torch.no_grad():
         if np.any(predicted_masks) and np.any(ground_truth_masks):
             hausdorff_dist = hausdorff_distance(predicted_masks[0, 0], ground_truth_masks[0, 0])
             hausdorff_distances.append(hausdorff_dist)
+            
+        prediction_3d.append(predicted_masks)
+        ground_truth_3d.append(ground_truth_masks)
+
+    prediction_3d = np.array(prediction_3d)
+    ground_truth_3d = np.array(ground_truth_3d)
+    predictions_3d = np.array([prediction_3d[:86], prediction_3d[86:]])
+    ground_truths_3d = np.array([ground_truth_3d[:86], ground_truth_3d[86:]])
+
+    dice_scores_3d = []
+    for i in range(2):
+        intersection_3d = np.sum(predictions_3d[i] * ground_truths_3d[i])
+        union_3d = np.sum(predictions_3d[i]) + np.sum(ground_truths_3d[i])
+        dice_score_3d = (2.0 * intersection_3d) / (union_3d + 1e-6)  # Avoid division by zero
+        dice_scores_3d.append(dice_score_3d)
 
 # Convert lists to NumPy arrays
 dice_scores = np.array(dice_scores) if dice_scores else np.array([np.nan])  # Handle empty case
@@ -108,3 +125,5 @@ if not np.isnan(hausdorff_distances).all():
     print(f" - Mean Hausdorff Distance: {hausdorff_distances.mean():.4f} ± {hausdorff_distances.std():.4f}")
 else:
     print(" - Hausdorff Distance: Not computed (at least one mask was empty for all cases)")
+
+print(f" - 3D DICE scores : {tuple(dice_scores_3d)}")
