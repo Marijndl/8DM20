@@ -80,9 +80,9 @@ for row, (label_text, alpha, sigma, slice_idx) in enumerate(cases):
     if row == 0:
         label = "Empty Slice"
     else:
-        label = f"α={alpha}, σ={sigma}" if alpha != 0 else "α=0 (No Deform.)"
+        label = f"α={alpha} \n σ={sigma}" if alpha != 0 else "α=0 \n (No Deform.)"
     axes[row, 0].text(-0.1, 0.5, label, transform=axes[row, 0].transAxes, va='center', ha='right', fontsize=25)
 
-plt.suptitle(f"Comparison of the original mask, the deformed mask and the VAE output.", fontsize=30)
+# plt.suptitle(f"Comparison of the original mask, the deformed mask and the VAE output.", fontsize=30)
 plt.tight_layout()
 plt.show()
