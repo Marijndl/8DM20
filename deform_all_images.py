@@ -133,7 +133,7 @@ def create_vae_model(checkpoint_path):
 if __name__ == "__main__":
     # Load the VAE model
     # checkpoint_path = r"C:\Users\20203226\Documents\GitHub\8DM20\runs\vae_model_weights_SPADE\vae_model_SPADE.pth"  # Replace with actual path
-    checkpoint_path = r"/runs/vae_model_weights_SPADE/vae_model_SPADE_6_final.pth"  # Replace with actual path
+    checkpoint_path = r"./runs/vae_model_weights_SPADE/vae_model_SPADE_6_final.pth"  # Replace with actual path
     vae_model = create_vae_model(checkpoint_path)
 
     # Process the directory and generate synthetic images

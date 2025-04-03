@@ -323,7 +323,7 @@ if __name__ == "__main__":
     plot_examples(mask_array, deformed_mask, num_examples=3)
 
     # Plot the 3D deformation field
-    plot_deformation_field_3d(dx, dy, dz, mask_array, spacing=15)
+    # plot_deformation_field_3d(dx, dy, dz, mask_array, spacing=15)
 
     # Plot 2D slices of the deformation field
-    plot_deformation_field_slices(dx, dy, dz, mask_array, num_slices=3)
+    # plot_deformation_field_slices(dx, dy, dz, mask_array, num_slices=3)
